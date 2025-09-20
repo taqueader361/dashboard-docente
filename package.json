@@ -1,0 +1,22 @@
+{
+  "name": "dashboard-docente",
+  "version": "1.0.0",
+  "description": "Dashboard Docente - Google Apps Script + React Integration",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "lint": "cd frontend && npm run lint",
+    "sync-gas": "cd backend && clasp pull",
+    "push-gas": "cd backend && clasp push",
+    "deploy-gas": "cd backend && clasp deploy",
+    "status-gas": "cd backend && clasp status",
+    "deployments-gas": "cd backend && clasp deployments",
+    "workflow-check": "echo '🔄 CLASP Workflow Check:' && cd backend && clasp status && echo '📋 Recent Deployments:' && clasp deployments"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "devDependencies": {
+    "@google/clasp": "^3.0.6-alpha"
+  }
+}

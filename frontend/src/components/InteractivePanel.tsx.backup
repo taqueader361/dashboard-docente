@@ -1,0 +1,361 @@
+import React, { useState, useRef, useEffect } from 'react';
+import html2canvas from 'html2canvas';
+
+interface InteractivePanelProps {
+  onClose: () => void;
+}
+
+const InteractivePanel: React.FC<InteractivePanelProps> = ({ onClose }) => {
+  const [activeTool, setActiveTool] = useState<'annotations' | 'screenshot' | 'roulette' | 'poll'>('annotations');
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [color, setColor] = useState('#000000');
+  const [brushSize, setBrushSize] = useState(5);
+  const [students, setStudents] = useState<string[]>([
+    'Ana García', 'Carlos López', 'María Rodríguez', 'Juan Martínez', 'Laura Sánchez',
+    'Pedro González', 'Sofia Fernández', 'Diego Pérez', 'Valentina Ruiz', 'Mateo Díaz'
+  ]);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  const [spinAngle, setSpinAngle] = useState(0); [students, setStudents] = useState<string[]>([
+    'Ana García', 'Carlos López', 'María Rodríguez', 'Juan Martínez', 'Laura Sánchez',
+    'Pedro González', 'Sofia Fernández', 'Diego Pérez', 'Valentina Ruiz', 'Mateo Díaz'
+  ]);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  const [spinAngle, setSpinAngle] = useState(0);
+
+interface InteractivePanelProps {
+  onClose: () => void;
+}
+
+const InteractivePanel: React.FC<InteractivePanelProps> = ({ onClose }) => {
+  const [activeTool, setActiveTool] = useState<'annotations' | 'screenshot' | 'roulette' | 'poll'>('annotations');
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [color, setColor] = useState('#000000');
+  const [brushSize, setBrushSize] = useState(2);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+
+  // Initialize canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.strokeStyle = color;
+    context.lineWidth = brushSize;
+    contextRef.current = context;
+  }, []);
+
+  // Update canvas properties when color or brush size changes
+  useEffect(() => {
+    if (contextRef.current) {
+      contextRef.current.strokeStyle = color;
+      contextRef.current.lineWidth = brushSize;
+    }
+  }, [color, brushSize]);
+
+  const startDrawing = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!contextRef.current) return;
+    
+    const { offsetX, offsetY } = event.nativeEvent;
+    contextRef.current.beginPath();
+    contextRef.current.moveTo(offsetX, offsetY);
+    setIsDrawing(true);
+  };
+
+  const draw = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !contextRef.current) return;
+    
+    const { offsetX, offsetY } = event.nativeEvent;
+    contextRef.current.lineTo(offsetX, offsetY);
+    contextRef.current.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (!contextRef.current) return;
+    
+    contextRef.current.closePath();
+    setIsDrawing(false);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !contextRef.current) return;
+    
+    contextRef.current.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const saveAnnotation = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const link = document.createElement('a');
+    link.download = `anotacion-${new Date().toISOString().slice(0, 10)}.png`;
+    link.href = canvas.toDataURL();
+    link.click();
+  };
+
+  const takeScreenshot = async () => {
+    try {
+      // Capturar todo el documento
+      const canvas = await html2canvas(document.body, {
+        useCORS: true,
+        allowTaint: true,
+        scale: 1,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        x: 0,
+        y: 0
+      });
+
+      // Convertir a blob y descargar
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `captura-aula-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png');
+    } catch (error) {
+      console.error('Error al capturar pantalla:', error);
+      alert('Error al capturar la pantalla. Inténtalo de nuevo.');
+    }
+  };
+
+  const spinRoulette = () => {
+    if (isSpinning || students.length === 0) return;
+
+    setIsSpinning(true);
+    setSelectedStudent(null);
+
+    // Generar ángulo aleatorio con múltiples vueltas
+    const spins = 5 + Math.random() * 5; // 5-10 vueltas completas
+    const randomAngle = Math.random() * 360;
+    const finalAngle = spinAngle + (spins * 360) + randomAngle;
+
+    setSpinAngle(finalAngle);
+
+    // Calcular el estudiante seleccionado después de la animación
+    setTimeout(() => {
+      const normalizedAngle = finalAngle % 360;
+      const segmentAngle = 360 / students.length;
+      const selectedIndex = Math.floor((360 - normalizedAngle + segmentAngle / 2) / segmentAngle) % students.length;
+      setSelectedStudent(students[selectedIndex]);
+      setIsSpinning(false);
+    }, 3000); // Tiempo de la animación
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+        <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
+          <h2 className="text-xl font-bold">🎯 Panel Interactivo de Aula</h2>
+          <button
+            onClick={onClose}
+            className="text-white hover:text-gray-200 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="p-6">
+          {/* Tool Selection */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <button
+              onClick={() => setActiveTool('annotations')}
+              className={`p-3 rounded-lg border-2 transition-colors text-center ${
+                activeTool === 'annotations'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <div className="text-xl mb-1">✏️</div>
+              <div className="text-xs font-medium">Anotaciones</div>
+            </button>
+
+            <button
+              onClick={() => setActiveTool('screenshot')}
+              className={`p-3 rounded-lg border-2 transition-colors text-center ${
+                activeTool === 'screenshot'
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <div className="text-xl mb-1">📸</div>
+              <div className="text-xs font-medium">Captura</div>
+            </button>
+
+            <button
+              onClick={() => setActiveTool('roulette')}
+              className={`p-3 rounded-lg border-2 transition-colors text-center ${
+                activeTool === 'roulette'
+                  ? 'border-purple-500 bg-purple-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <div className="text-xl mb-1">🎲</div>
+              <div className="text-xs font-medium">Ruleta</div>
+            </button>
+
+            <button
+              onClick={() => setActiveTool('poll')}
+              className={`p-3 rounded-lg border-2 transition-colors text-center ${
+                activeTool === 'poll'
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <div className="text-xl mb-1">📊</div>
+              <div className="text-xs font-medium">Encuestas</div>
+            </button>
+          </div>
+
+          {/* Tool Content */}
+          {activeTool === 'annotations' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">✏️ Sistema de Anotaciones</h3>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={clearCanvas}
+                    className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors"
+                  >
+                    Limpiar
+                  </button>
+                  <button
+                    onClick={saveAnnotation}
+                    className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </div>
+
+              {/* Drawing Controls */}
+              <div className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm font-medium">Color:</label>
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm font-medium">Grosor:</label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="20"
+                    value={brushSize}
+                    onChange={(e) => setBrushSize(Number(e.target.value))}
+                    className="w-20"
+                  />
+                  <span className="text-sm text-gray-600 w-6">{brushSize}px</span>
+                </div>
+              </div>
+
+              {/* Canvas */}
+              <div className="border-2 border-gray-300 rounded-lg overflow-hidden bg-white">
+                <canvas
+                  ref={canvasRef}
+                  width={800}
+                  height={400}
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                  className="cursor-crosshair block"
+                  style={{ maxWidth: '100%', height: 'auto' }}
+                />
+              </div>
+
+              <p className="text-sm text-gray-600 text-center">
+                Haz clic y arrastra para dibujar sobre el canvas. Las anotaciones se pueden guardar como imagen.
+              </p>
+            </div>
+          )}
+
+          {activeTool === 'screenshot' && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">📸 Captura de Pantalla</h3>
+              <div className="p-6 bg-gray-50 rounded-lg">
+                <div className="text-center mb-4">
+                  <div className="text-4xl mb-2">📸</div>
+                  <p className="text-gray-600">
+                    Captura la pantalla completa con todas las anotaciones y contenido visible
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={takeScreenshot}
+                    className="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+                  >
+                    📸 Capturar Pantalla Completa
+                  </button>
+
+                  <div className="text-xs text-gray-500 text-center">
+                    La imagen se descargará automáticamente como PNG
+                  </div>
+                </div>
+
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-blue-800 mb-2">💡 Consejos:</h4>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• La captura incluye todo el contenido visible</li>
+                    <li>• Se guarda automáticamente en tu carpeta de descargas</li>
+                    <li>• Útil para guardar momentos importantes de la clase</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTool === 'roulette' && (
+            <div className="text-center space-y-4">
+              <h3 className="text-lg font-semibold">🎲 Ruleta de Participación</h3>
+              <div className="p-8 bg-gray-50 rounded-lg">
+                <div className="text-6xl mb-4">🎲</div>
+                <p className="text-gray-600 mb-4">
+                  Ruleta interactiva próximamente disponible
+                </p>
+                <button className="px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+                  Girar Ruleta
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTool === 'poll' && (
+            <div className="text-center space-y-4">
+              <h3 className="text-lg font-semibold">📊 Encuestas Rápidas</h3>
+              <div className="p-8 bg-gray-50 rounded-lg">
+                <div className="text-6xl mb-4">📊</div>
+                <p className="text-gray-600 mb-4">
+                  Sistema de encuestas próximamente disponible
+                </p>
+                <button className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                  Crear Encuesta
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default InteractivePanel;
