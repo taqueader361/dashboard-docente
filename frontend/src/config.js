@@ -9,10 +9,8 @@
 // Configuración de la API
 export const API_CONFIG = {
   // URL del despliegue de Google Apps Script
-  // ✅ ACTUALIZADO: URL del despliegue @22 (V4 - Latest Code with Debug)
-  BASE_URL: 'https://script.google.com/macros/s/AKfycbyINpZVWPBouIf7zxtQLuhnIDiZOUcqPTeMehOkCW81KIZoatBqmQPlPDxezgl1Ygscrg/exec',
-
-  // Endpoints disponibles
+  // ✅ ACTUALIZADO: Usa variable de entorno de Vercel
+  BASE_URL: import.meta.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbyINpZVWPBouIf7zxtQLuhnIDiZOUcqPTeMehOkCW81KIZoatBqmQPlPDxezgl1Ygscrg/exec',  // Endpoints disponibles
   ENDPOINTS: {
     FILES: '?action=getFiles',
     CREATE_FILE: '?action=createFile',
@@ -69,7 +67,7 @@ export const APP_CONFIG = {
 // Configuración de Google Gemini AI
 export const GEMINI_CONFIG = {
   // API Key de Google AI Studio
-  API_KEY: import.meta.env.VITE_GEMINI_API_KEY || 'your_gemini_api_key_here',
+  API_KEY: import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyAqaulHsekNZI9ksK5rHG-CnIS0t0vWn7s',
 
   // Modelo a utilizar
   MODEL: 'gemini-1.5-flash',
